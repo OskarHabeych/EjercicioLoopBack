@@ -1,4 +1,9 @@
 import { /* inject, */ BindingScope, injectable} from '@loopback/core';
+import {repository} from '@loopback/repository';
+import {config} from '../config/config';
+import {Usuarios} from '../models';
+import {UsuariosRepository} from '../repositories';
+const jwt = require('jsonwebtoken');
 
 // Nuevas librerias
 const generator = require("password-generator");
@@ -7,7 +12,8 @@ const cryptoJS = require("crypto-js");
 @injectable({scope: BindingScope.TRANSIENT})
 
 export class AuthService {
-  constructor(/* Add @inject to inject parameters */) { }
+  constructor(@repository(UsuariosRepository)
+  public usuarioRepository: UsuariosRepository) { }
 
   /*
    * Add service methods here
@@ -22,5 +28,41 @@ export class AuthService {
     let claveCifrada = cryptoJS.MD5(clave).toString();
     return claveCifrada;
   }
+
+  //JWT
+  GenerarTokenJWT(usuario: Usuarios) {
+    let token = jwt.sign({
+      data: {
+        id: usuario.id,
+        correo: usuario.correo,
+        nombre: usuario.nombre + " " + usuario.apellidos
+      }
+    }, config.claveJWT)
+
+    return token
+  }
+
+  validarTokenJWT(token: string) {
+    try {
+      let datos = jwt.verify(token, config.claveJWT);
+      return datos;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  //Autenticacion
+  IdentificarPersona(correo: string, password: string) {
+    try {
+      let p = this.usuarioRepository.findOne({where: {correo: correo, password: password}})
+      if (p) {
+        return p;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
 
 }
