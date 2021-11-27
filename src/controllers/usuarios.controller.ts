@@ -27,6 +27,7 @@ export class UsuariosController {
     public servicioAuth: AuthService
   ) { }
 
+  @authenticate.skip()
   @post('/usuarios')
   @response(200, {
     description: 'Usuarios model instance',
